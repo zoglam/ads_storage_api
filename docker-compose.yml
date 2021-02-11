@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  app:
+    container_name: app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    ports:
+      - 8080:8080
+    depends_on:
+      - mysql
+  
+  mysql:
+    container_name: mysql
+    image: mariadb:10.5
+    env_file: .env
+    ports:
+      - 3306:3306
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: $MARIA_PASSWORD
+      MYSQL_DATABASE: $MARIA_DB
+    volumes:
+      - dbvolume:/var/lib/mysql
+
+volumes:
+  dbvolume:

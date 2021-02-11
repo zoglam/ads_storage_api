@@ -1,0 +1,7 @@
+.vscode
+
+_*
+engine
+bin/
+
+.env

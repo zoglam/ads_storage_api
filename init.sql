@@ -1,0 +1,17 @@
+CREATE DATABASE IF NOT EXISTS `ads_management`;
+USE `ads_management`;
+
+CREATE TABLE ADS(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    description VARCHAR(1000),
+    price DECIMAL(10, 2),
+    data_create TIMESTAMP
+)
+
+CREATE TABLE IMAGES(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    ref VARCHAR(512) NOT NULL,
+    ads_id INT NOT NULL,
+    FOREIGN KEY (ads_id)  REFERENCES ADS (id)
+)
