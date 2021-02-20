@@ -1,37 +1,42 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
+    "fmt"
+    "log"
+    "net/http"
 
-	"github.com/gorilla/mux"
+    "github.com/gorilla/mux"
 
-	config "github.com/zoglam/ads_storage_api/config"
-	handler "github.com/zoglam/ads_storage_api/handler"
-	models "github.com/zoglam/ads_storage_api/models"
+    config "github.com/zoglam/ads_storage_api/config"
+    handler "github.com/zoglam/ads_storage_api/handler/http"
+    models "github.com/zoglam/ads_storage_api/models"
 )
 
 func main() {
-	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s",
-		config.DBUser,
-		config.DBPass,
-		config.DBHost,
-		config.DBPort,
-		config.DBName,
-	)
-	models.ConnectDataBase(dsn)
-	defer models.CloseConnectionDataBase()
+    conf := config.New()
+    dsn := fmt.Sprintf(
+        "%s:%s@tcp(%s:%s)/%s",
+        conf.Maria.DBUser,
+        conf.Maria.DBPass,
+        conf.Maria.DBHost,
+        conf.Maria.DBPort,
+        conf.Maria.DBName,
+    )
+    err := models.OpenConnectionDataBase(dsn)
+    if err != nil {
+        log.Fatalf("%s - %s\n%s", "Database connection failed", err.Error(), dsn)
+    }
+    defer models.CloseConnectionDataBase()
 
-	r := mux.NewRouter()
-	s := r.PathPrefix("/api").Subrouter()
-	s.Headers("Content-Type", "application/json")
-	s.NotFoundHandler = http.HandlerFunc(handler.GetErrorPage)
+    r := mux.NewRouter()
+    s := r.PathPrefix("/api").Subrouter()
+    r.Headers("Content-Type", "application/json")
+    s.NotFoundHandler = http.HandlerFunc(handler.GetEmptyPage)
 
-	s.HandleFunc("/ads/all", handler.GetAds).Methods("GET")
-	s.HandleFunc("/ads/get", handler.GetAd).Methods("GET")
-	s.HandleFunc("/ads/create", handler.CreateAd).Methods("POST")
+    s.HandleFunc("/ads/all", handler.GetAds).Methods("GET")
+    s.HandleFunc("/ads/get", handler.GetAd).Methods("GET")
+    s.HandleFunc("/ads/create", handler.CreateAd).Methods("POST")
 
-	log.Fatal(http.ListenAndServe(config.ServerPort, r))
+    fmt.Printf("Server started on http://localhost:%s\n", conf.ServerPort)
+    log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", conf.ServerPort), r))
 }

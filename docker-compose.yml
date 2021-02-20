@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 services:
   app:
@@ -11,7 +11,7 @@ services:
       - 8080:8080
     depends_on:
       - mysql
-  
+
   mysql:
     container_name: mysql
     image: mariadb:10.5
@@ -23,6 +23,7 @@ services:
       MYSQL_ROOT_PASSWORD: $MARIA_PASSWORD
       MYSQL_DATABASE: $MARIA_DB
     volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
       - dbvolume:/var/lib/mysql
 
 volumes:
