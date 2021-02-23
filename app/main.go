@@ -1,16 +1,35 @@
 package main
 
 import (
+    "context"
     "fmt"
     "log"
     "net/http"
+    "os"
+    "os/signal"
+    "time"
 
     "github.com/gorilla/mux"
 
     config "github.com/zoglam/ads_storage_api/config"
-    handler "github.com/zoglam/ads_storage_api/handler/http"
+    handler "github.com/zoglam/ads_storage_api/handler"
     models "github.com/zoglam/ads_storage_api/models"
 )
+
+func getRouts() *mux.Router {
+    route := mux.NewRouter()
+    api := route.PathPrefix("/api").Subrouter()
+    adsAPI := api.PathPrefix("/ads").Subrouter()
+
+    route.Headers("Content-Type", "application/json")
+    route.NotFoundHandler = http.HandlerFunc(handler.GetEmptyPage)
+
+    adsAPI.HandleFunc("/all", handler.GetAds).Methods("GET")
+    adsAPI.HandleFunc("/get", handler.GetAd).Methods("GET")
+    adsAPI.HandleFunc("/create", handler.CreateAd).Methods("POST")
+
+    return route
+}
 
 func main() {
     conf := config.New()
@@ -22,21 +41,25 @@ func main() {
         conf.Maria.DBPort,
         conf.Maria.DBName,
     )
-    err := models.OpenConnectionDataBase(dsn)
-    if err != nil {
-        log.Fatalf("%s - %s\n%s", "Database connection failed", err.Error(), dsn)
+
+    if err := models.OpenConnectionDataBase(dsn); err != nil {
+        log.Fatalf("%s - %s", "Database connection failed", err.Error())
     }
     defer models.CloseConnectionDataBase()
 
-    r := mux.NewRouter()
-    s := r.PathPrefix("/api").Subrouter()
-    r.Headers("Content-Type", "application/json")
-    s.NotFoundHandler = http.HandlerFunc(handler.GetEmptyPage)
+    server := &http.Server{Addr: fmt.Sprintf(":%s", conf.ServerPort), Handler: getRouts()}
 
-    s.HandleFunc("/ads/all", handler.GetAds).Methods("GET")
-    s.HandleFunc("/ads/get", handler.GetAd).Methods("GET")
-    s.HandleFunc("/ads/create", handler.CreateAd).Methods("POST")
+    go func() {
+        fmt.Printf("Server started on http://localhost:%s\n", conf.ServerPort)
+        if err := server.ListenAndServe(); err != nil {
+            print("Server stopped")
+        }
+    }()
 
-    fmt.Printf("Server started on http://localhost:%s\n", conf.ServerPort)
-    log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", conf.ServerPort), r))
+    stop := make(chan os.Signal, 1)
+    signal.Notify(stop, os.Interrupt)
+    <-stop
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+    server.Shutdown(ctx)
 }
