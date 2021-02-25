@@ -4,4 +4,4 @@ until mysql -h $MARIA_HOST -p$MARIA_PASSWORD; do
 done
 >&2 echo "mariadb is up - executing commands"
 
-go run app/main.go
+./engine
