@@ -17,8 +17,15 @@ type Config struct {
     ServerPort string
 }
 
+// Params ...
+var Params *Config
+
+func init() {
+    Params = new()
+}
+
 // New returns a new Config struct
-func New() *Config {
+func new() *Config {
     return &Config{
         Maria: MariaConfig{
             DBUser: getEnv("MARIA_USER", "root"),

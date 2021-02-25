@@ -4,16 +4,27 @@ import (
     "errors"
     "net/http"
     "strconv"
+    "strings"
 
     ads "github.com/zoglam/ads_storage_api/models/ads"
+    utils "github.com/zoglam/ads_storage_api/utils"
 )
 
+type adsHandler struct{}
+
+// Ads ...
+var Ads adsHandlerInterface
+
+func init() {
+    Ads = &adsHandler{}
+}
+
 // GetAds ...
-func GetAds(w http.ResponseWriter, r *http.Request) {
+func (a *adsHandler) GetAds(w http.ResponseWriter, r *http.Request) {
     var err error
     defer func() {
         if err != nil {
-            getErrorPage(w, r, err)
+            Error.getErrorPage(w, r, err)
         }
     }()
 
@@ -30,56 +41,79 @@ func GetAds(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    getStatusOKPage(w, r, ads)
+    success.getStatusOKPage(w, r, ads)
 }
 
 // GetAd ...
-func GetAd(w http.ResponseWriter, r *http.Request) {
+func (a *adsHandler) GetAd(w http.ResponseWriter, r *http.Request) {
     var err error
     defer func() {
         if err != nil {
-            getErrorPage(w, r, err)
+            Error.getErrorPage(w, r, err)
         }
     }()
 
+    var hasDescription, hasAllImages bool
+    params := r.URL.Query()
+    adID := params.Get("id")
+    if adID == "" {
+        err = errors.New("ID not Found")
+        return
+    }
+
+    fields := params.Get("fields")
+
+    for _, field := range strings.Split(fields, ",") {
+        if field == "description" {
+            hasDescription = true
+        } else if field == "images" {
+            hasAllImages = true
+        }
+    }
+
+    ad, err := ads.AdsDao.GetByAdTitle(adID, hasDescription, hasAllImages)
+    if err != nil {
+        return
+    }
+
+    success.getStatusOKPage(w, r, ad)
 }
 
 // CreateAd ...
-func CreateAd(w http.ResponseWriter, r *http.Request) {
+func (a *adsHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
     var err error
     defer func() {
         if err != nil {
-            getErrorPage(w, r, err)
+            Error.getErrorPage(w, r, err)
         }
     }()
 
     r.ParseForm()
     title := r.PostForm.Get("title")
+    if title == "" {
+        err = errors.New("Title not Found")
+        return
+    }
     description := r.PostForm.Get("description")
 
-    images := []string{
+    images, err := utils.DataValidation.GetValidatedImages([]string{
         r.PostForm.Get("img1"),
         r.PostForm.Get("img2"),
         r.PostForm.Get("img3"),
-    }
-    filteredImages := images[:0]
-    for _, ref := range images {
-        if ref != "" {
-            filteredImages = append(filteredImages, ref)
-        }
-    }
-    images = filteredImages
-    if len(images) == 0 {
-        err = errors.New("Images not found")
-        return
-    }
-
-    price := r.PostForm.Get("price")
-
-    _, err = ads.AdsDao.CreateAd(title, description, images, price)
+    })
     if err != nil {
         return
     }
 
-    getStatusOKPage(w, r, nil)
+    price, err := utils.DataValidation.GetValidatedPrice(r.PostForm.Get("price"))
+    if err != nil {
+        return
+    }
+
+    lid, err := ads.AdsDao.CreateAd(title, description, images, price)
+    if err != nil {
+        return
+    }
+
+    success.getStatusOKPage(w, r, lid)
 }

@@ -30,16 +30,17 @@ func (a *adsDao) GetAdsByPageNumber(pageNumber string, sortBy string, orderBy bo
 
     query := fmt.Sprintf(`
         SELECT
-            a.title,
+            ad.id,
+            ad.title,
             (
                 SELECT img.ref
                 FROM IMAGES as img
-                WHERE a.id = img.ads_id
+                WHERE ad.id = img.ads_id
                 ORDER BY data_create
                 LIMIT 1
             ) as image,
             price
-        FROM ADS as a
+        FROM ADS as ad
         ORDER BY %s %s LIMIT %s, 10
     `, sortByField, sortOrder, pageNumber)
     rows, err := models.DB.Query(query)
@@ -51,12 +52,15 @@ func (a *adsDao) GetAdsByPageNumber(pageNumber string, sortBy string, orderBy bo
     var ads []Ads
     for rows.Next() {
         var ad Ads
-        var img string
-        err := rows.Scan(&ad.Title, &img, &ad.Price)
+        err := rows.Scan(
+            &ad.ID,
+            &ad.Title,
+            &ad.Image,
+            &ad.Price,
+        )
         if err != nil {
             return nil, err
         }
-        ad.Images = append(ad.Images, img)
         ads = append(ads, ad)
     }
     if err = rows.Err(); err != nil {
@@ -65,8 +69,59 @@ func (a *adsDao) GetAdsByPageNumber(pageNumber string, sortBy string, orderBy bo
     return ads, nil
 }
 
-func (a *adsDao) GetByAdTitle(adsTitle string, description bool, allImages bool) (Ads, error) {
-    return Ads{}, nil
+func (a *adsDao) GetByAdTitle(adID string, hasDescription bool, hasAllImages bool) (Ads, error) {
+    rows, err := models.DB.Query(`
+        SELECT 
+            ad.id,
+            ad.title,
+            IFNULL(ad.description, ""),
+            IFNULL(img1.ref, ""),
+            IFNULL(img2.ref, ""),
+            IFNULL(img3.ref, ""),
+            ad.price
+        FROM ADS as ad
+            LEFT JOIN IMAGES as img1
+                ON ad.id=img1.ads_id
+            LEFT JOIN IMAGES as img2
+                ON ad.id=img2.ads_id AND img2.id!=img1.id
+            LEFT JOIN IMAGES as img3
+                ON ad.id=img3.ads_id AND img3.id!=img1.id AND img3.id!=img2.id
+        WHERE ad.id=?
+        LIMIT 1
+    `, adID)
+    if err != nil {
+        return Ads{}, err
+    }
+    defer rows.Close()
+
+    var ad Ads
+    for rows.Next() {
+        var img1, img2, img3 string
+        var description string
+        err := rows.Scan(&ad.ID, &ad.Title, &description, &img1, &img2, &img3, &ad.Price)
+        if err != nil {
+            return Ads{}, err
+        }
+        ad.Image = img1
+
+        if hasAllImages {
+            for _, ref := range []string{img1, img2, img3} {
+                ad.Images = append(ad.Images, ref)
+            }
+        }
+
+        if hasDescription {
+            if description == "" {
+                ad.Description = "empty"
+            } else {
+                ad.Description = description
+            }
+        }
+    }
+    if err = rows.Err(); err != nil {
+        return Ads{}, err
+    }
+    return ad, nil
 }
 
 func (a *adsDao) CreateAd(title string, description string, imagesList []string, price string) (int64, error) {

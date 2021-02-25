@@ -5,8 +5,17 @@ import (
     "net/http"
 )
 
+type errorHandler struct{}
+
+// Error ...
+var Error errorHandlerInterface
+
+func init() {
+    Error = &errorHandler{}
+}
+
 // GetEmptyPage ...
-func GetEmptyPage(w http.ResponseWriter, r *http.Request) {
+func (e *errorHandler) GetEmptyPage(w http.ResponseWriter, r *http.Request) {
     httpStatus := http.StatusNotFound
     w.WriteHeader(httpStatus)
     message, _ := json.Marshal(
@@ -18,7 +27,7 @@ func GetEmptyPage(w http.ResponseWriter, r *http.Request) {
     w.Write(message)
 }
 
-func getErrorPage(w http.ResponseWriter, r *http.Request, errorDetails error) {
+func (e *errorHandler) getErrorPage(w http.ResponseWriter, r *http.Request, errorDetails error) {
     httpStatus := http.StatusBadRequest
     w.WriteHeader(httpStatus)
     message, _ := json.Marshal(
