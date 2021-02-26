@@ -5,9 +5,9 @@ type Ads struct {
     ID          int64    `json:"id,omitempty"`
     Title       string   `json:"title"`
     Description string   `json:"description,omitempty"`
-    Price       float32  `json:"price"`
     Image       string   `json:"main_image,omitempty"`
     Images      []string `json:"images,omitempty"`
+    Price       float32  `json:"price"`
     DataCreate  string   `json:"-"`
 }
 
