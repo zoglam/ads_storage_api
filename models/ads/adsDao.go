@@ -70,7 +70,12 @@ func (a *adsDao) GetAdsByPageNumber(pageNumber string, sortBy string, orderBy bo
 }
 
 func (a *adsDao) GetByAdTitle(adID string, hasDescription bool, hasAllImages bool) (Ads, error) {
-    rows, err := models.DB.Query(`
+
+    var ad Ads
+    var img1, img2, img3 string
+    var description string
+
+    err := models.DB.QueryRow(`
         SELECT 
             ad.id,
             ad.title,
@@ -88,39 +93,34 @@ func (a *adsDao) GetByAdTitle(adID string, hasDescription bool, hasAllImages boo
                 ON ad.id=img3.ads_id AND img3.id!=img1.id AND img3.id!=img2.id
         WHERE ad.id=?
         LIMIT 1
-    `, adID)
+    `, adID).Scan(
+        &ad.ID,
+        &ad.Title,
+        &description,
+        &img1,
+        &img2,
+        &img3,
+        &ad.Price,
+    )
     if err != nil {
         return Ads{}, err
     }
-    defer rows.Close()
 
-    var ad Ads
-    for rows.Next() {
-        var img1, img2, img3 string
-        var description string
-        err := rows.Scan(&ad.ID, &ad.Title, &description, &img1, &img2, &img3, &ad.Price)
-        if err != nil {
-            return Ads{}, err
-        }
-        ad.Image = img1
-
-        if hasAllImages {
-            for _, ref := range []string{img1, img2, img3} {
-                ad.Images = append(ad.Images, ref)
-            }
-        }
-
-        if hasDescription {
-            if description == "" {
-                ad.Description = "empty"
-            } else {
-                ad.Description = description
-            }
+    ad.Image = img1
+    if hasAllImages {
+        for _, ref := range []string{img1, img2, img3} {
+            ad.Images = append(ad.Images, ref)
         }
     }
-    if err = rows.Err(); err != nil {
-        return Ads{}, err
+
+    if hasDescription {
+        if description == "" {
+            ad.Description = "empty"
+        } else {
+            ad.Description = description
+        }
     }
+
     return ad, nil
 }
 
