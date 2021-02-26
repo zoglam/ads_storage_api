@@ -14,21 +14,6 @@ type Message struct {
     Response         interface{} `json:"response,omitempty"`
 }
 
-type adsHandlerInterface interface {
-    GetAds(w http.ResponseWriter, r *http.Request)
-    GetAd(w http.ResponseWriter, r *http.Request)
-    CreateAd(w http.ResponseWriter, r *http.Request)
-}
-
-type errorHandlerInterface interface {
-    GetEmptyPage(w http.ResponseWriter, r *http.Request)
-    getErrorPage(w http.ResponseWriter, r *http.Request, errorDetails error)
-}
-
-type successHandlerInterface interface {
-    getStatusOKPage(w http.ResponseWriter, r *http.Request, details interface{})
-}
-
 // GetRouts ...
 func GetRouts() *mux.Router {
     route := mux.NewRouter()
@@ -36,11 +21,11 @@ func GetRouts() *mux.Router {
     adsAPI := api.PathPrefix("/ads").Subrouter()
 
     route.Headers("Content-Type", "application/json")
-    route.NotFoundHandler = http.HandlerFunc(Error.GetEmptyPage)
+    route.NotFoundHandler = http.HandlerFunc(getEmptyPage)
 
-    adsAPI.HandleFunc("/all", Ads.GetAds).Methods("GET")
-    adsAPI.HandleFunc("/get", Ads.GetAd).Methods("GET")
-    adsAPI.HandleFunc("/create", Ads.CreateAd).Methods("POST")
+    adsAPI.HandleFunc("/all", getAds).Methods("GET")
+    adsAPI.HandleFunc("/get", getAd).Methods("GET")
+    adsAPI.HandleFunc("/create", createAd).Methods("POST")
 
     return route
 }

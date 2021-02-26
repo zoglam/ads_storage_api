@@ -10,21 +10,11 @@ import (
     utils "github.com/zoglam/ads_storage_api/utils"
 )
 
-type adsHandler struct{}
-
-// Ads ...
-var Ads adsHandlerInterface
-
-func init() {
-    Ads = &adsHandler{}
-}
-
-// GetAds ...
-func (a *adsHandler) GetAds(w http.ResponseWriter, r *http.Request) {
+func getAds(w http.ResponseWriter, r *http.Request) {
     var err error
     defer func() {
         if err != nil {
-            Error.getErrorPage(w, r, err)
+            getErrorPage(w, r, err)
         }
     }()
 
@@ -41,15 +31,14 @@ func (a *adsHandler) GetAds(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    success.getStatusOKPage(w, r, ads)
+    getStatusOKPage(w, r, ads)
 }
 
-// GetAd ...
-func (a *adsHandler) GetAd(w http.ResponseWriter, r *http.Request) {
+func getAd(w http.ResponseWriter, r *http.Request) {
     var err error
     defer func() {
         if err != nil {
-            Error.getErrorPage(w, r, err)
+            getErrorPage(w, r, err)
         }
     }()
 
@@ -76,15 +65,14 @@ func (a *adsHandler) GetAd(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    success.getStatusOKPage(w, r, ad)
+    getStatusOKPage(w, r, ad)
 }
 
-// CreateAd ...
-func (a *adsHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
+func createAd(w http.ResponseWriter, r *http.Request) {
     var err error
     defer func() {
         if err != nil {
-            Error.getErrorPage(w, r, err)
+            getErrorPage(w, r, err)
         }
     }()
 
@@ -96,16 +84,12 @@ func (a *adsHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
     }
     description := r.PostForm.Get("description")
 
-    images, err := utils.DataValidation.GetValidatedImages([]string{
-        r.PostForm.Get("img1"),
-        r.PostForm.Get("img2"),
-        r.PostForm.Get("img3"),
-    })
+    images, err := utils.DataValidation.GetImages(r.PostForm.Get("images"))
     if err != nil {
         return
     }
 
-    price, err := utils.DataValidation.GetValidatedPrice(r.PostForm.Get("price"))
+    price, err := utils.DataValidation.GetPrice(r.PostForm.Get("price"))
     if err != nil {
         return
     }
@@ -115,5 +99,5 @@ func (a *adsHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    success.getStatusOKPage(w, r, lid)
+    getStatusOKPage(w, r, lid)
 }
