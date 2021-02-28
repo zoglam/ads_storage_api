@@ -6,8 +6,8 @@ import (
     "strconv"
     "strings"
 
+    controllers "github.com/zoglam/ads_storage_api/controllers"
     ads "github.com/zoglam/ads_storage_api/models/ads"
-    utils "github.com/zoglam/ads_storage_api/utils"
 )
 
 func getAds(w http.ResponseWriter, r *http.Request) {
@@ -84,12 +84,12 @@ func createAd(w http.ResponseWriter, r *http.Request) {
     }
     description := r.PostForm.Get("description")
 
-    images, err := utils.DataValidation.GetImages(r.PostForm.Get("images"))
+    images, err := controllers.DataValidation.GetImages(r.PostForm.Get("images"))
     if err != nil {
         return
     }
 
-    price, err := utils.DataValidation.GetPrice(r.PostForm.Get("price"))
+    price, err := controllers.DataValidation.GetPrice(r.PostForm.Get("price"))
     if err != nil {
         return
     }

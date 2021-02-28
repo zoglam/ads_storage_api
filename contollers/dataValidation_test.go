@@ -1,4 +1,4 @@
-package utils
+package controllers
 
 import (
     "testing"
@@ -55,7 +55,7 @@ func TestGetValidatedPrice(t *testing.T) {
 
     for _, tc := range testCases {
         t.Run(tc.name, func(t *testing.T) {
-            out, err := DataValidation.GetValidatedPrice(tc.price)
+            out, err := DataValidation.GetPrice(tc.price)
             if out != tc.out || err.Error() != tc.err {
                 t.Fatalf("Dropped on test with price=%s", tc.price)
             }
